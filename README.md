@@ -16,7 +16,7 @@ AI-powered flashcard software. Paste text, upload a document, or drop in a URL �
 
 ## Use it online
 
-No install: **[Open the web app](https://nayansm004.github.io/flashforge/)** — same generation and spaced-repetition logic, running entirely in your browser. Decks are stored in browser local storage (this device only — export to JSON if you want a backup or want to move them). Paste your own OpenRouter key in its Settings tab; nothing is sent anywhere except directly to OpenRouter.
+No install: **[Open the web app](https://nayansm004.github.io/Flashforge/)** — same generation and spaced-repetition logic, running entirely in your browser. Decks are stored in browser local storage (this device only — export to JSON if you want a backup or want to move them). Paste your own OpenRouter key in its Settings tab; nothing is sent anywhere except directly to OpenRouter.
 
 The web version only accepts pasted text or `.txt` uploads for now (no PDF/DOCX parsing yet — that's desktop-only). To enable Pages yourself on a fork: **Settings → Pages → Source: GitHub Actions** (the included workflow deploys `docs/` automatically).
 
