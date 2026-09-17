@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlashForge — Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0c; --panel: #17171488; --card: #1a1a17; --card2: #1c1c19;
+    --ember: #e8c84a; --ember-dim: rgba(232,200,74,0.12); --ember-line: rgba(232,200,74,0.25);
+    --green: #3dba7e; --green-dim: rgba(61,186,126,0.12);
+    --red: #e05252; --red-dim: rgba(224,82,82,0.12);
+    --ink: #f2f0eb; --ink-dim: #a8a49c; --ink-faint: #6b6860; --ink-ghost: #3a3a36;
+    --line: rgba(255,255,255,0.08);
+    --font-display: 'Fraunces', serif; --font-body: 'Karla', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; display: flex; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea, select { font-family: inherit; }
+
+  /* ---------- sidebar ---------- */
+  #sidebar { width: 200px; min-width: 200px; background: #141412; border-right: 1px solid var(--line);
+             display: flex; flex-direction: column; padding-bottom: 20px; height: 100vh; position: sticky; top: 0; }
+  .logo { font-family: var(--font-display); font-size: 20px; font-weight: 600; padding: 26px 22px 18px; }
+  .logo em { color: var(--ember); font-style: normal; }
+  .navbtn { background: transparent; border: none; color: var(--ink-faint); text-align: left; font-size: 13px;
+            font-weight: 600; padding: 11px 18px; margin: 1px 10px; border-radius: 10px; }
+  .navbtn:hover { background: rgba(255,255,255,0.05); color: var(--ink-dim); }
+  .navbtn.active { background: var(--ember-dim); color: var(--ember); }
+  .side-spacer { flex: 1; }
+  .side-note { font-size: 10.5px; color: var(--ink-ghost); text-align: center; padding: 0 16px; }
+
+  /* ---------- main ---------- */
+  #main { flex: 1; min-width: 0; }
+  .page { display: none; padding: 34px 40px; max-width: 960px; }
+  .page.active { display: block; }
+  h1.title { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+  p.sub { color: var(--ink-faint); font-size: 13px; margin: 0 0 26px; }
+
+  .banner { display: none; background: rgba(232,200,74,0.08); border: 1px solid var(--ember-line); color: var(--ember);
+             border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 18px; }
+  .banner.show { display: block; }
+
+  textarea, input[type=text], input[type=password], input[type=number] {
+    background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; width: 100%; outline: none;
+  }
+  textarea:focus, input:focus { border-color: rgba(232,200,74,0.4); }
+  textarea { min-height: 150px; resize: vertical; font-family: var(--font-body); }
+  .row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .row > * { flex: 1; }
+  .sec-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-ghost); margin: 4px 0 10px; text-transform: uppercase; }
+
+  .diffrow { display: flex; gap: 10px; margin-bottom: 16px; }
+  .diffbtn { border-radius: 10px; padding: 10px 20px; font-weight: 700; font-size: 13px; border: 1px solid; background: transparent; }
+  .diffbtn[data-d="Easy"]   { color: var(--green); border-color: rgba(61,186,126,0.25); background: rgba(61,186,126,0.08); }
+  .diffbtn[data-d="Medium"] { color: var(--ember); border-color: var(--ember-line); background: var(--ember-dim); }
+  .diffbtn[data-d="Hard"]   { color: var(--red); border-color: rgba(224,82,82,0.25); background: rgba(224,82,82,0.08); }
+  .diffbtn.on { outline: 2px solid currentColor; outline-offset: 1px; }
+
+  .btn { border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 600; border: 1px solid var(--line);
+         background: #242420; color: var(--ink-dim); }
+  .btn:hover { background: #2e2e2a; color: var(--ink); }
+  .btn-primary { background: var(--ember-dim); color: var(--ember); border-color: var(--ember-line); font-weight: 700;
+                 padding: 13px 22px; font-size: 14px; width: 100%; }
+  .btn-primary:hover { background: rgba(232,200,74,0.2); }
+  .btn-primary:disabled { opacity: .4; cursor: default; }
+  .btn-save { background: var(--green-dim); color: var(--green); border-color: rgba(61,186,126,0.25); font-weight: 700; }
+  .btn-danger { background: var(--red-dim); color: var(--red); border-color: rgba(224,82,82,0.2); }
+
+  .status { font-size: 13px; font-weight: 600; text-align: center; min-height: 18px; margin: 12px 0; }
+  .status.ok { color: var(--green); } .status.err { color: var(--red); }
+
+  #previewBox { display: none; margin-top: 18px; }
+  .pcard { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;
+           display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; font-size: 12px; }
+  .pcard .n { color: var(--ink-ghost); font-weight: 700; width: 20px; }
+  .pcard .q { flex: 1; color: var(--ink); font-weight: 600; }
+  .pcard .a { flex: 1; color: var(--ink-faint); }
+
+  /* deck grid */
+  #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .deckcard { background: #181816; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px 14px; position: relative; }
+  .deckcard .accent { height: 3px; border-radius: 2px; margin-bottom: 10px; }
+  .deckcard h3 { font-size: 15px; margin: 0 0 4px; }
+  .deckcard .cat { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  .deckcard .stat { font-size: 11px; color: var(--ink-ghost); margin-bottom: 12px; }
+  .deckcard .btnrow { display: flex; gap: 6px; }
+  .deckcard .btnrow .btn { flex: 1; padding: 7px 8px; font-size: 11.5px; }
+  .empty { text-align: center; color: var(--ink-ghost); padding: 60px 0; font-size: 15px; }
+
+  /* study */
+  #studyTop { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  #studyTop .name { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+  #studyTop .spacer { flex: 1; }
+  .flipwrap { perspective: 1400px; margin: 10px 0 20px; }
+  .flipcard { min-height: 260px; border-radius: 20px; position: relative; transform-style: preserve-3d;
+              transition: transform .5s cubic-bezier(.2,.8,.2,1); cursor: pointer; }
+  .flipcard.flipped { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; border-radius: 20px; backface-visibility: hidden; background: var(--card2);
+          border: 1px solid var(--line); padding: 30px; display: flex; flex-direction: column; gap: 12px; }
+  .face.back { transform: rotateY(180deg); }
+  .fbadge { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--ember); }
+  .flbl { font-size: 10px; font-weight: 700; letter-spacing: .1em; color: var(--ink-ghost); }
+  .qtext { font-family: var(--font-display); font-size: 19px; font-weight: 600; flex: 1; display: flex; align-items: center; text-align: center; justify-content: center; }
+  .atext { font-size: 15px; color: #d4d0c8; flex: 1; display: flex; align-items: center; text-align: center; justify-content: center; font-weight: 300; }
+  .fhint { font-size: 11px; color: var(--ink-ghost); text-align: center; }
+  .ctrlrow { display: flex; gap: 10px; }
+  .ctrlrow button { flex: 1; padding: 13px; font-size: 13px; font-weight: 700; border-radius: 12px; border: 1px solid; }
+  .btn-knew { background: var(--green-dim); color: var(--green); border-color: rgba(61,186,126,.2); }
+  .btn-miss { background: var(--red-dim); color: var(--red); border-color: rgba(224,82,82,.2); }
+  .btn-skip { background: var(--card); color: var(--ink-faint); border-color: var(--line); font-weight: 600; }
+  button:disabled { opacity: .35; }
+  .hintline { text-align: center; font-size: 11px; color: var(--ink-ghost); margin-top: 12px; }
+
+  .summary { text-align: center; padding: 20px 0; }
+  .grade { font-family: var(--font-display); font-size: 24px; margin-bottom: 6px; }
+  .statsbar { display: flex; justify-content: space-around; background: #181816; border: 1px solid var(--line);
+              border-radius: 14px; padding: 16px; margin: 20px 0; }
+  .statnum { font-size: 28px; font-weight: 800; }
+  .statlbl { font-size: 11px; color: var(--ink-ghost); }
+
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 5px; }
+  a.link { color: var(--ember); text-decoration: none; } a.link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="logo">flash<em>forge</em></div>
+  <button class="navbtn active" data-page="generate">✦ Generate</button>
+  <button class="navbtn" data-page="decks">⊞ My Decks</button>
+  <button class="navbtn" data-page="study" id="navStudy" disabled>▷ Study</button>
+  <button class="navbtn" data-page="settings">⚙ Settings</button>
+  <div class="side-spacer"></div>
+  <div class="side-note">Runs entirely in this browser.<br>No account, no server.</div>
+</div>
+
+<div id="main">
+
+  <!-- GENERATE -->
+  <div class="page active" id="page-generate">
+    <h1 class="title">Generate Flashcards</h1>
+    <p class="sub">Paste text or upload a .txt file — AI turns it into flashcards.</p>
+    <div class="banner" id="noKeyBanner">⚠ No API key set — add one in Settings → save it, then come back.</div>
+
+    <div class="row">
+      <div>
+        <input type="file" id="fileInput" accept=".txt" style="display:none">
+        <button class="btn" id="uploadBtn" style="width:100%;">📄 Upload .txt file</button>
+      </div>
+      <div id="fileLabel" style="flex:1;color:var(--ink-faint);font-size:12px;align-self:center;"></div>
+    </div>
+
+    <textarea id="sourceText" placeholder="Paste your notes, article, or textbook chapter here…"></textarea>
+
+    <div class="row" style="margin-top:16px;">
+      <input type="text" id="deckName" placeholder="Deck name (required)">
+      <input type="text" id="deckCategory" placeholder="Category (optional, e.g. Biology)">
+    </div>
+
+    <div class="sec-label">Difficulty</div>
+    <div class="diffrow">
+      <button class="diffbtn on" data-d="Easy">🟢 Easy</button>
+      <button class="diffbtn on" data-d="Medium">🟡 Medium</button>
+      <button class="diffbtn" data-d="Hard">🔴 Hard</button>
+    </div>
+
+    <div class="row" style="align-items:center;">
+      <div style="flex:none;display:flex;align-items:center;gap:10px;">
+        <span style="color:var(--ink-dim);">Number of cards:</span>
+        <input type="number" id="cardCount" value="15" min="3" max="50" style="width:70px;">
+      </div>
+      <div></div>
+    </div>
+
+    <button class="btn-primary" id="genBtn">✦ Generate Flashcards</button>
+    <div class="status" id="genStatus"></div>
+
+    <div id="previewBox">
+      <div class="sec-label" id="previewTitle">Preview</div>
+      <div id="previewCards"></div>
+      <button class="btn btn-save" id="saveDeckBtn" style="width:100%;margin-top:6px;">Save Deck →</button>
+    </div>
+  </div>
+
+  <!-- DECKS -->
+  <div class="page" id="page-decks">
+    <div style="display:flex;align-items:center;margin-bottom:6px;">
+      <h1 class="title" style="flex:1;">My Decks</h1>
+      <input type="file" id="importInput" accept=".json" style="display:none">
+      <button class="btn" id="importBtn" style="margin-right:8px;">⬆ Import</button>
+      <button class="btn" id="exportAllBtn">⬇ Export All</button>
+    </div>
+    <p class="sub">Right-click a deck for more options, including studying due cards only.</p>
+    <div class="status" id="decksStatus"></div>
+    <div id="deckGrid"></div>
+    <div class="empty" id="deckEmpty" style="display:none;">📚<br>No decks yet. Generate your first one!</div>
+  </div>
+
+  <!-- STUDY -->
+  <div class="page" id="page-study">
+    <div id="studyTop">
+      <div class="name" id="studyDeckName"></div>
+      <span id="studyDiffBadge" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;"></span>
+      <div class="spacer"></div>
+      <span id="studyScore" style="color:var(--ink-ghost);font-size:12px;"></span>
+      <button class="btn" id="endSessionBtn" style="padding:6px 14px;font-size:12px;">End Session</button>
+    </div>
+    <div id="studyProg" style="font-size:12px;font-weight:600;color:var(--ink-ghost);margin-bottom:6px;"></div>
+
+    <div id="studyScreen">
+      <div class="flipwrap">
+        <div class="flipcard" id="flipCard">
+          <div class="face front">
+            <div class="fbadge" id="fCat"></div>
+            <div class="flbl">QUESTION</div>
+            <div class="qtext" id="fQ"></div>
+            <div class="fhint">· · · click to flip</div>
+          </div>
+          <div class="face back">
+            <div class="fbadge" id="bCat"></div>
+            <div class="flbl">ANSWER</div>
+            <div class="atext" id="fA"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ctrlrow">
+        <button class="btn-miss" id="missBtn" disabled>✕ Missed</button>
+        <button class="btn-skip" id="skipBtn">→ Skip</button>
+        <button class="btn-knew" id="knewBtn" disabled>✓ Knew it</button>
+      </div>
+      <div class="hintline">Space — flip · ↑ knew it · ↓ missed · → skip</div>
+    </div>
+
+    <div id="summaryScreen" style="display:none;">
+      <div class="summary">
+        <div class="grade" id="sumGrade"></div>
+        <div style="color:var(--ink-faint);" id="sumSub"></div>
+        <div class="statsbar">
+          <div><div class="statnum" style="color:var(--green);" id="sumKnew">0</div><div class="statlbl">Knew it</div></div>
+          <div><div class="statnum" style="color:var(--red);" id="sumMiss">0</div><div class="statlbl">Missed</div></div>
+          <div><div class="statnum" style="color:var(--ink-ghost);" id="sumSkip">0</div><div class="statlbl">Skipped</div></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="retryMissedBtn" style="background:var(--ember-dim);color:var(--ember);border-color:var(--ember-line);">Retry Missed</button>
+          <button class="btn" id="studyAgainBtn">Study Again</button>
+          <button class="btn" id="backToDecksBtn">← Back to Decks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <h1 class="title">Settings</h1>
+    <p class="sub" style="margin-bottom:30px;">Your API key is stored only in this browser's local storage — it's never sent anywhere except OpenRouter.</p>
+
+    <div class="sec-label">AI Configuration</div>
+    <div class="row">
+      <input type="password" id="apiKeyInput" placeholder="sk-or-v1-... (paste your OpenRouter API key)">
+      <button class="btn" id="toggleKeyBtn" style="flex:none;">Show</button>
+      <button class="btn btn-save" id="saveKeyBtn" style="flex:none;">Save Key</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink-faint);">Get a free key at <a class="link" href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a> — no credit card needed.</p>
+
+    <div class="sec-label" style="margin-top:26px;">Model</div>
+    <div class="row">
+      <select id="modelSelect" style="flex:1;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 14px;">
+        <option value="openrouter/free">openrouter/free (auto-picks a live free model — recommended)</option>
+        <option value="openai/gpt-oss-120b:free">openai/gpt-oss-120b:free</option>
+        <option value="qwen/qwen3-next-80b-a3b-instruct:free">qwen/qwen3-next-80b-a3b-instruct:free</option>
+        <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free</option>
+        <option value="google/gemma-3-27b-it:free">google/gemma-3-27b-it:free</option>
+        <option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free</option>
+      </select>
+      <button class="btn btn-save" id="saveModelBtn" style="flex:none;">Save</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink-faint);">Pinned <code>:free</code> models rotate out of OpenRouter's free tier without much notice — <code>openrouter/free</code> auto-picks whatever's currently live.</p>
+
+    <div class="sec-label" style="margin-top:26px;">Data</div>
+    <p style="font-size:12px;color:var(--ink-faint);">Decks live in this browser's local storage. Clearing site data or switching browsers/devices loses them — export first if you want a backup.</p>
+    <button class="btn btn-danger" id="clearAllBtn">⚠ Clear All Data</button>
+
+    <div class="sec-label" style="margin-top:26px;">About</div>
+    <p style="font-size:12px;color:var(--ink-faint);">FlashForge Web · same generation &amp; spaced-repetition logic as the <a class="link" href="https://github.com/nayansm004/flashforge" target="_blank" rel="noopener">desktop app</a>, running entirely client-side.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- storage ----------
+  const LS_DECKS = "flashforge_decks";
+  const LS_SETTINGS = "flashforge_settings";
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+
+  function loadDecks() { try { return JSON.parse(localStorage.getItem(LS_DECKS)) || []; } catch(e) { return []; } }
+  function saveDecks(d) { localStorage.setItem(LS_DECKS, JSON.stringify(d)); }
+  function loadSettings() { try { return JSON.parse(localStorage.getItem(LS_SETTINGS)) || {}; } catch(e) { return {}; } }
+  function saveSettings(s) { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); }
+
+  let decks = loadDecks();
+  let settings = loadSettings();
+  if (!settings.model) settings.model = "openrouter/free";
+
+  // ---------- nav ----------
+  const pages = document.querySelectorAll(".page");
+  const navBtns = document.querySelectorAll(".navbtn");
+  let sessionActive = false;
+
+  function goTo(key) {
+    if (key === "study" && !sessionActive) key = "decks";
+    pages.forEach(p => p.classList.toggle("active", p.id === "page-" + key));
+    navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
+    if (key === "decks") renderDecks();
+  }
+  navBtns.forEach(b => b.addEventListener("click", () => goTo(b.dataset.page)));
+
+  // ================= GENERATE =================
+  const sourceText = document.getElementById("sourceText");
+  const deckNameEl = document.getElementById("deckName");
+  const deckCatEl = document.getElementById("deckCategory");
+  const cardCountEl = document.getElementById("cardCount");
+  const genBtn = document.getElementById("genBtn");
+  const genStatus = document.getElementById("genStatus");
+  const noKeyBanner = document.getElementById("noKeyBanner");
+  const previewBox = document.getElementById("previewBox");
+  const previewCards = document.getElementById("previewCards");
+  const previewTitle = document.getElementById("previewTitle");
+  let difficulty = "Medium";
+  let generatedCards = [];
+
+  document.querySelectorAll(".diffbtn").forEach(b => {
+    b.addEventListener("click", () => {
+      difficulty = b.dataset.d;
+      document.querySelectorAll(".diffbtn").forEach(x => x.classList.toggle("on", x === b));
+    });
+  });
+
+  document.getElementById("uploadBtn").addEventListener("click", () => document.getElementById("fileInput").click());
+  document.getElementById("fileInput").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      sourceText.value = reader.result;
+      document.getElementById("fileLabel").textContent = `📄 ${f.name} (${reader.result.length.toLocaleString()} chars)`;
+      if (!deckNameEl.value.trim()) deckNameEl.value = f.name.replace(/\.txt$/i, "");
+    };
+    reader.readAsText(f);
+  });
+
+  function setStatus(el, msg, kind) {
+    el.textContent = msg;
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function extractJsonArray(text) {
+    text = text.trim();
+    if (text.startsWith("```")) {
+      const lines = text.split("\n").slice(1);
+      if (lines.length && lines[lines.length-1].trim().startsWith("```")) lines.pop();
+      text = lines.join("\n").trim();
+    }
+    const start = text.indexOf("["), end = text.lastIndexOf("]");
+    if (start === -1 || end === -1 || end < start) return text;
+    return text.slice(start, end + 1);
+  }
+
+  async function callOpenRouter(prompt, model, apiKey) {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey,
+        "HTTP-Referer": location.href,
+        "X-Title": "FlashForge Web",
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 4096,
+      }),
+    });
+    if (!res.ok) {
+      let msg = res.status + " " + res.statusText;
+      try { const j = await res.json(); msg = (j.error && j.error.message) || msg; } catch(e) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const choice = data.choices && data.choices[0];
+    if (!choice) throw new Error("No response from model.");
+    return (choice.message && choice.message.content) || choice.text || "";
+  }
+
+  const FALLBACK_MODELS = ["openrouter/free","openai/gpt-oss-120b:free","qwen/qwen3-next-80b-a3b-instruct:free","meta-llama/llama-3.3-70b-instruct:free"];
+
+  async function generateWithFallback(prompt, apiKey, preferred, onStatus) {
+    const chain = [preferred, ...FALLBACK_MODELS.filter(m => m !== preferred)];
+    let lastErr = "";
+    for (const model of chain) {
+      try {
+        onStatus && onStatus(`Asking ${model}…`);
+        return await callOpenRouter(prompt, model, apiKey);
+      } catch (e) {
+        lastErr = e.message;
+        onStatus && onStatus(`'${model}' failed, trying next model…`);
+      }
+    }
+    throw new Error("All models failed. Last error: " + lastErr);
+  }
+
+  genBtn.addEventListener("click", async () => {
+    const text = sourceText.value.trim();
+    const name = deckNameEl.value.trim();
+    if (!text) { setStatus(genStatus, "⚠ Please paste some text first.", "err"); return; }
+    if (!name) { setStatus(genStatus, "⚠ Please enter a deck name.", "err"); return; }
+    if (!settings.apiKey) {
+      noKeyBanner.classList.add("show");
+      setStatus(genStatus, "⚠ No API key — add one in Settings first.", "err");
+      return;
+    }
+    noKeyBanner.classList.remove("show");
+    genBtn.disabled = true; genBtn.textContent = "Generating…";
+    previewBox.style.display = "none";
+    setStatus(genStatus, "Thinking…");
+
+    const category = deckCatEl.value.trim() || "General";
+    const count = Math.max(3, Math.min(50, parseInt(cardCountEl.value, 10) || 15));
+    const diffGuide = { Easy: "Simple recall questions. Short, direct answers.",
+      Medium: "Conceptual understanding questions. Answers require explanation.",
+      Hard: "Deep analysis, edge cases, complex multi-part answers." }[difficulty];
+    const prompt = `You are an expert flashcard creator. Create exactly ${count} Q&A flashcards from the text below at ${difficulty} difficulty.\n\nDifficulty guide: ${diffGuide}\n\nReturn ONLY a valid JSON array, no markdown, no explanation:\n[{"question":"...","answer":"...","category":"${category}"}]\n\nEach answer 1-3 sentences.\n\nTEXT:\n${text.slice(0, 80000)}`;
+
+    try {
+      const raw = await generateWithFallback(prompt, settings.apiKey, settings.model,
+        (s) => setStatus(genStatus, s));
+      const parsed = JSON.parse(extractJsonArray(raw));
+      if (!Array.isArray(parsed)) throw new Error("Model did not return a JSON array.");
+      generatedCards = parsed.map(c => ({
+        question: String(c.question || "").trim(),
+        answer: String(c.answer || "").trim(),
+        category: String(c.category || category).trim() || category,
+        difficulty,
+      })).filter(c => c.question && c.answer);
+      if (!generatedCards.length) throw new Error("No cards generated. Try pasting more detailed text.");
+      setStatus(genStatus, `✓ ${generatedCards.length} cards generated (${difficulty} difficulty)!`, "ok");
+      showPreview(generatedCards);
+    } catch (e) {
+      setStatus(genStatus, "✗ " + e.message, "err");
+    } finally {
+      genBtn.disabled = false; genBtn.textContent = "✦ Generate Flashcards";
+    }
+  });
+
+  function showPreview(cards) {
+    previewCards.innerHTML = "";
+    cards.slice(0, 8).forEach((c, i) => {
+      const row = document.createElement("div"); row.className = "pcard";
+      row.innerHTML = `<div class="n">${i+1}</div><div class="q">${escapeHtml(c.question)}</div><div class="a">${escapeHtml(c.answer)}</div>`;
+      previewCards.appendChild(row);
+    });
+    if (cards.length > 8) {
+      const m = document.createElement("div");
+      m.style.cssText = "color:var(--ink-ghost);font-size:12px;padding:6px 0;";
+      m.textContent = `+ ${cards.length - 8} more cards…`;
+      previewCards.appendChild(m);
+    }
+    previewTitle.textContent = `Preview — ${cards.length} card${cards.length!==1?"s":""} · Difficulty: ${difficulty}`;
+    previewBox.style.display = "block";
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  document.getElementById("saveDeckBtn").addEventListener("click", () => {
+    if (!generatedCards.length) return;
+    const now = new Date().toISOString();
+    const deck = {
+      id: uid(), name: deckNameEl.value.trim(), category: deckCatEl.value.trim() || "General",
+      createdAt: now, lastStudied: null,
+      cards: generatedCards.map(c => ({
+        id: uid(), question: c.question, answer: c.answer, category: c.category, difficulty: c.difficulty,
+        timesReviewed: 0, timesCorrect: 0, lastReviewed: null, nextReview: now, difficultyRating: 2.5,
+      })),
+    };
+    decks.unshift(deck); saveDecks(decks);
+    sourceText.value = ""; deckNameEl.value = ""; deckCatEl.value = ""; cardCountEl.value = 15;
+    document.getElementById("fileLabel").textContent = "";
+    generatedCards = []; previewBox.style.display = "none";
+    setStatus(genStatus, `✓ '${deck.name}' saved — ${deck.cards.length} cards ready to study.`, "ok");
+    goTo("decks");
+  });
+
+  // ================= DECKS =================
+  const deckGrid = document.getElementById("deckGrid");
+  const deckEmpty = document.getElementById("deckEmpty");
+  const decksStatus = document.getElementById("decksStatus");
+  const DECK_COLORS = ["#e8c84a","#3dba7e","#38bfbf","#e87d3e","#e05252","#a78bfa","#60a5fa","#f472b6"];
+
+  function fmtDate(iso) {
+    if (!iso) return "Never";
+    try { return new Date(iso).toLocaleDateString(undefined, {month:"short",day:"numeric",year:"numeric"}); }
+    catch(e) { return "—"; }
+  }
+
+  function renderDecks() {
+    deckGrid.innerHTML = "";
+    if (!decks.length) { deckEmpty.style.display = "block"; deckGrid.style.display = "none"; return; }
+    deckEmpty.style.display = "none"; deckGrid.style.display = "grid";
+    decks.forEach((deck, i) => {
+      const color = DECK_COLORS[i % DECK_COLORS.length];
+      const el = document.createElement("div"); el.className = "deckcard";
+      el.innerHTML = `
+        <div class="accent" style="background:${color};"></div>
+        <h3>${escapeHtml(deck.name)}</h3>
+        <div class="cat" style="color:${color};">${escapeHtml((deck.category||"General").toUpperCase())}</div>
+        <div class="stat">${deck.cards.length} cards · Studied ${fmtDate(deck.lastStudied)}</div>
+        <div class="btnrow">
+          <button class="btn" data-act="study" style="background:var(--ember-dim);color:var(--ember);border-color:var(--ember-line);">Study →</button>
+          <button class="btn" data-act="due">Due only</button>
+          <button class="btn" data-act="export">⬇</button>
+          <button class="btn btn-danger" data-act="del">✕</button>
+        </div>`;
+      el.querySelector('[data-act="study"]').addEventListener("click", () => startStudy(deck, deck.cards));
+      el.querySelector('[data-act="due"]').addEventListener("click", () => {
+        const due = getDueCards(deck);
+        if (!due.length) { setStatus(decksStatus, "Nothing due in this deck right now — great job staying on top of it.", "ok"); return; }
+        startStudy(deck, due);
+      });
+      el.querySelector('[data-act="export"]').addEventListener("click", () => exportDecks([deck]));
+      el.querySelector('[data-act="del"]').addEventListener("click", () => {
+        if (confirm(`Delete '${deck.name}'? This cannot be undone.`)) {
+          decks = decks.filter(d => d.id !== deck.id); saveDecks(decks);
+          setStatus(decksStatus, "Deck deleted.", "ok"); renderDecks();
+        }
+      });
+      deckGrid.appendChild(el);
+    });
+  }
+
+  function getDueCards(deck) {
+    const now = new Date();
+    return deck.cards.filter(c => !c.nextReview || new Date(c.nextReview) <= now);
+  }
+
+  function exportDecks(list) {
+    const payload = {
+      flashforge_export: true, version: "1.0", exported_at: new Date().toISOString(),
+      decks: list.map(d => ({ name: d.name, category: d.category,
+        cards: d.cards.map(c => ({ question: c.question, answer: c.answer, category: c.category, difficulty: c.difficulty })) })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (list.length === 1 ? list[0].name.replace(/[^a-z0-9 _-]/gi, "_") : "FlashForge_all") + ".json";
+    a.click();
+  }
+
+  document.getElementById("exportAllBtn").addEventListener("click", () => {
+    if (!decks.length) { setStatus(decksStatus, "No decks to export.", "err"); return; }
+    exportDecks(decks); setStatus(decksStatus, "Exported all decks.", "ok");
+  });
+
+  document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importInput").click());
+  document.getElementById("importInput").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!data || !Array.isArray(data.decks)) throw new Error("No valid 'decks' array found.");
+        let imported = 0; const now = new Date().toISOString();
+        data.decks.forEach(dd => {
+          if (!dd.name) return;
+          decks.unshift({
+            id: uid(), name: dd.name, category: dd.category || "", createdAt: now, lastStudied: null,
+            cards: (dd.cards || []).filter(c => c.question && c.answer).map(c => ({
+              id: uid(), question: c.question, answer: c.answer, category: c.category || "",
+              difficulty: c.difficulty || "Medium", timesReviewed: 0, timesCorrect: 0,
+              lastReviewed: null, nextReview: now, difficultyRating: 2.5,
+            })),
+          });
+          imported++;
+        });
+        saveDecks(decks); setStatus(decksStatus, `Imported ${imported} deck(s).`, "ok"); renderDecks();
+      } catch (err) { setStatus(decksStatus, "Import error: " + err.message, "err"); }
+    };
+    reader.readAsText(f);
+    e.target.value = "";
+  });
+
+  // ================= STUDY =================
+  const DIFF_STYLE = {
+    Easy:   ["🟢 EASY",   "color:#3dba7e;background:rgba(61,186,126,0.12);"],
+    Medium: ["🟡 MEDIUM", "color:#e8c84a;background:rgba(232,200,74,0.12);"],
+    Hard:   ["🔴 HARD",   "color:#e05252;background:rgba(224,82,82,0.12);"],
+  };
+  let curDeck = null, curCards = [], curIdx = 0, knew = 0, missed = 0, skipped = 0, missedCards = [];
+  const flipCard = document.getElementById("flipCard");
+  let flipped = false;
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+
+  function startStudy(deck, cardSet) {
+    curDeck = deck; curCards = shuffle(cardSet);
+    curIdx = 0; knew = 0; missed = 0; skipped = 0; missedCards = [];
+    document.getElementById("studyDeckName").textContent = deck.name;
+    const diffs = cardSet.map(c => c.difficulty || "Medium");
+    const dominant = diffs.sort((a,b) => diffs.filter(v=>v===a).length - diffs.filter(v=>v===b).length).pop() || "Medium";
+    const [lbl, style] = DIFF_STYLE[dominant] || DIFF_STYLE.Medium;
+    const badge = document.getElementById("studyDiffBadge"); badge.textContent = lbl; badge.style.cssText += style + "font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;";
+    deck.lastStudied = new Date().toISOString(); saveDecks(decks);
+    document.getElementById("studyScreen").style.display = "block";
+    document.getElementById("summaryScreen").style.display = "none";
+    document.getElementById("navStudy").disabled = false;
+    sessionActive = true;
+    loadCard();
+    goTo("study");
+  }
+
+  function loadCard() {
+    if (curIdx >= curCards.length) { endSession(); return; }
+    const c = curCards[curIdx];
+    flipped = false; flipCard.classList.remove("flipped");
+    document.getElementById("fCat").textContent = (c.category||"").toUpperCase();
+    document.getElementById("bCat").textContent = (c.category||"").toUpperCase();
+    document.getElementById("fQ").textContent = c.question;
+    document.getElementById("fA").textContent = c.answer;
+    document.getElementById("studyProg").textContent = `Card ${curIdx+1} of ${curCards.length}`;
+    document.getElementById("studyScore").textContent = `✓ ${knew}   ✗ ${missed}`;
+    document.getElementById("missBtn").disabled = true;
+    document.getElementById("knewBtn").disabled = true;
+  }
+
+  flipCard.addEventListener("click", () => {
+    flipped = !flipped; flipCard.classList.toggle("flipped", flipped);
+    setTimeout(() => {
+      document.getElementById("missBtn").disabled = !flipped;
+      document.getElementById("knewBtn").disabled = !flipped;
+    }, 260);
+  });
+
+  function scoreCard(correct) {
+    const c = curCards[curIdx];
+    if (!c.id) return; // safety
+    const now = new Date();
+    c.timesReviewed = (c.timesReviewed||0) + 1;
+    c.timesCorrect = (c.timesCorrect||0) + (correct ? 1 : 0);
+    c.difficultyRating = correct ? Math.min((c.difficultyRating||2.5)+0.1, 5.0) : Math.max((c.difficultyRating||2.5)-0.3, 1.3);
+    const days = correct ? Math.max(1, Math.floor(c.difficultyRating * Math.max(c.timesCorrect,1) * 0.4)) : 1;
+    c.lastReviewed = now.toISOString();
+    c.nextReview = new Date(now.getTime() + days*86400000).toISOString();
+    // persist onto the deck's real card list (curCards may be a due-only subset)
+    if (curDeck) {
+      const real = curDeck.cards.find(x => x.id === c.id);
+      if (real) Object.assign(real, c);
+      saveDecks(decks);
+    }
+  }
+
+  function answer(kind) {
+    const c = curCards[curIdx];
+    if (kind === "knew") { knew++; scoreCard(true); }
+    else if (kind === "miss") { missed++; missedCards.push(c); scoreCard(false); }
+    else { skipped++; }
+    curIdx++; loadCard();
+  }
+  document.getElementById("knewBtn").addEventListener("click", () => answer("knew"));
+  document.getElementById("missBtn").addEventListener("click", () => answer("miss"));
+  document.getElementById("skipBtn").addEventListener("click", () => answer("skip"));
+
+  function endSession() {
+    const total = curCards.length;
+    const pct = total ? Math.round((knew/total)*100) : 0;
+    const grade = pct>=90 ? "🏆 Excellent!" : pct>=70 ? "👍 Good job!" : pct>=50 ? "📈 Keep going!" : "📖 Keep studying";
+    document.getElementById("sumGrade").textContent = grade;
+    document.getElementById("sumSub").textContent = `You answered ${knew} of ${total} cards correctly.`;
+    document.getElementById("sumKnew").textContent = knew;
+    document.getElementById("sumMiss").textContent = missed;
+    document.getElementById("sumSkip").textContent = skipped;
+    document.getElementById("retryMissedBtn").style.display = missedCards.length ? "block" : "none";
+    document.getElementById("studyScreen").style.display = "none";
+    document.getElementById("summaryScreen").style.display = "block";
+    if (pct >= 70) burstConfetti();
+  }
+
+  document.getElementById("endSessionBtn").addEventListener("click", endSession);
+  document.getElementById("studyAgainBtn").addEventListener("click", () => startStudy(curDeck, curCards));
+  document.getElementById("retryMissedBtn").addEventListener("click", () => { if (missedCards.length) startStudy(curDeck, missedCards); });
+  document.getElementById("backToDecksBtn").addEventListener("click", () => { sessionActive = false; document.getElementById("navStudy").disabled = true; goTo("decks"); });
+
+  document.addEventListener("keydown", (e) => {
+    if (!document.getElementById("page-study").classList.contains("active")) return;
+    if (document.getElementById("studyScreen").style.display === "none") return;
+    if (e.key === " ") { e.preventDefault(); flipCard.click(); }
+    else if (e.key === "ArrowUp" && flipped) answer("knew");
+    else if (e.key === "ArrowDown" && flipped) answer("miss");
+    else if (e.key === "ArrowRight") answer("skip");
+  });
+
+  function burstConfetti() {
+    const colors = ["#e8c84a","#3dba7e","#38bfbf","#e87d3e","#e05252","#a78bfa"];
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:999;";
+    canvas.width = innerWidth; canvas.height = innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    let particles = Array.from({length:120}, () => ({
+      x: Math.random()*canvas.width, y: -20 - Math.random()*40,
+      vx: (Math.random()-0.5)*6, vy: 3+Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      size: 6+Math.random()*6, rot: Math.random()*360, spin: (Math.random()-0.5)*10, life: 1,
+    }));
+    function tick() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles = particles.filter(p => p.life > 0 && p.y < canvas.height+20);
+      particles.forEach(p => {
+        p.x += p.vx; p.vy += 0.15; p.y += p.vy; p.rot += p.spin; p.life -= 0.008;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.globalAlpha = Math.max(p.life, 0); ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2); ctx.restore();
+      });
+      if (particles.length) requestAnimationFrame(tick); else canvas.remove();
+    }
+    tick();
+    setTimeout(() => canvas.remove(), 3000);
+  }
+
+  // ================= SETTINGS =================
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const modelSelect = document.getElementById("modelSelect");
+  apiKeyInput.value = settings.apiKey || "";
+  modelSelect.value = settings.model || "openrouter/free";
+
+  document.getElementById("toggleKeyBtn").addEventListener("click", (e) => {
+    const showing = apiKeyInput.type === "text";
+    apiKeyInput.type = showing ? "password" : "text";
+    e.target.textContent = showing ? "Show" : "Hide";
+  });
+  document.getElementById("saveKeyBtn").addEventListener("click", () => {
+    settings.apiKey = apiKeyInput.value.trim(); saveSettings(settings);
+    noKeyBanner.classList.toggle("show", !settings.apiKey);
+    alert(settings.apiKey ? "API key saved." : "API key cleared.");
+  });
+  document.getElementById("saveModelBtn").addEventListener("click", () => {
+    settings.model = modelSelect.value; saveSettings(settings);
+    alert("Model preference saved.");
+  });
+  document.getElementById("clearAllBtn").addEventListener("click", () => {
+    if (confirm("This will permanently delete ALL decks. API key is kept. Are you sure?")) {
+      decks = []; saveDecks(decks); renderDecks();
+      alert("All decks cleared.");
+    }
+  });
+
+  // ---------- init ----------
+  if (!settings.apiKey) noKeyBanner.classList.add("show");
+  renderDecks();
+})();
+</script>
+</body>
+</html>
