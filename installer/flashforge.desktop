@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=FlashForge
+Comment=AI Flashcard Software
+Exec=/opt/flashforge/FlashForge
+Icon=flashforge
+Terminal=false
+Categories=Education;Office;
